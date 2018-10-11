@@ -8,6 +8,8 @@ CC = gcc
 
 OBJS = \
 	src/main.c	\
+	src/netransd.c \
+	../common/src/error.c
 
 TARGET = netransd
 
@@ -16,6 +18,8 @@ default: $(TARGET)
 $(TARGET): $(OBJS:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $(TARGET)
 
+error.o: ../common/src/error.c
+
 *.o: src/*.c
 
 run: $(TARGET)
@@ -23,4 +27,5 @@ run: $(TARGET)
 
 clean:
 	rm -f src/*.o
+	rm -f ../common/src/*.o
 	rm -f $(TARGET)
