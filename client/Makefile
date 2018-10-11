@@ -18,7 +18,7 @@ default: $(TARGET)
 $(TARGET): $(OBJS:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $(TARGET)
 
-main.o: src/main.c ../common/include/error.h
+main.o: src/main.c ../common/include/error.h include/netrans.h
 
 netrans.o: src/netrans.c include/netrans.h ../common/include/error.h ../common/include/packet.h
 
