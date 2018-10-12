@@ -13,7 +13,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdint.h>
+#include <string.h>
 
+#define DEFAULT_NET_DEVICE "eth0"
 #define MAX_ETHER_PAYLOAD 1500
 #define MAC_ADDR_LEN 6
 
@@ -30,7 +32,7 @@ static uint8_t mac_addrs[3][MAC_ADDR_LEN] = {
 
 static int send_message(int sockfd, int machine, const char *message, int message_size);
 
-int netrans_init(char *net_device)
+int netrans_init(char *net_device, int loopback)
 {
     int sockfd;
     struct ifreq ifr_nd, ifr_ma;
@@ -44,6 +46,7 @@ int netrans_init(char *net_device)
     }
 
     // Determine the device index of the given network device
+    if(!net_device) net_device = strdup(DEFAULT_NET_DEVICE);
     memset(&ifr_nd, 0, sizeof(struct ifreq));
     strcpy(ifr_nd.ifr_name, net_device);
     if(ioctl(sockfd, SIOCGIFINDEX, &ifr_nd) < 0) {
@@ -53,7 +56,7 @@ int netrans_init(char *net_device)
 
     // Store network device index in destination addr struct
     dest_addr.sll_ifindex = ifr_nd.ifr_ifindex;
-    
+
     // Determine the MAC address of the given network device
     memset(&ifr_ma, 0, sizeof(struct ifreq));
     strcpy(ifr_ma.ifr_name, net_device);
@@ -61,14 +64,15 @@ int netrans_init(char *net_device)
         sprintf(err_msg, "Unable to determine MAC address of '%s'", net_device);
         return -1;
     }
-    
+
     // Initialize ethernet header and set source MAC address and ethertype
     memset(&eth_hdr, 0, sizeof(PACKET_ETH_HDR));
+    if(loopback) memcpy(&eth_hdr.eth_mac_dest, &ifr_ma.ifr_hwaddr.sa_data, MAC_ADDR_LEN);
     memcpy(&eth_hdr.eth_mac_src, &ifr_ma.ifr_hwaddr.sa_data, MAC_ADDR_LEN);
     eth_hdr.eth_type = ntohs(ETHER_TYPE_NETRANS);
 
     // Attempt to send some message
-    send_message(sockfd, 2, "Hello from n1", 13);
+    if(send_message(sockfd, -1, "Hello!", 6) == -1) return -1;
 
     return sockfd;
 }
@@ -76,19 +80,24 @@ int netrans_init(char *net_device)
 static int send_message(int sockfd, int machine, const char *message, int message_size)
 {
     char payload[MAX_ETHER_PAYLOAD];
+    int eth_size, size = 0;
 
     // Set the destination MAC address in ethernet header
-    memcpy(&eth_hdr.eth_mac_dest, mac_addrs[machine], MAC_ADDR_LEN);
+    if(machine >= 0) memcpy(&eth_hdr.eth_mac_dest, mac_addrs[machine], MAC_ADDR_LEN);
 
     // Set the destination MAC address in sockaddr struct
     dest_addr.sll_halen = MAC_ADDR_LEN;
-    memcpy(&dest_addr.sll_addr, mac_addrs[machine], MAC_ADDR_LEN);
+    memcpy(&dest_addr.sll_addr, &eth_hdr.eth_mac_dest, MAC_ADDR_LEN);
+
+    eth_size = sizeof(PACKET_ETH_HDR);
 
     // Build the payload
-    memcpy(payload, &eth_hdr, sizeof(PACKET_ETH_HDR));
-    memcpy(payload, message, message_size);
+    memcpy(payload, &eth_hdr, eth_size);
+    size += eth_size;
+    memcpy(payload + size, message, message_size);
+    size += message_size;
 
-    int len = sendto(sockfd, payload, MAX_ETHER_PAYLOAD, 0, (struct sockaddr *)(&dest_addr), sizeof(struct sockaddr_ll));
+    int len = sendto(sockfd, payload, size, 0, (struct sockaddr *)(&dest_addr), sizeof(struct sockaddr_ll));
     if(len == -1) {
        strcpy(err_msg, strerror(errno));
        return -1;
