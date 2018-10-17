@@ -19,7 +19,7 @@ default: $(TARGET)
 $(TARGET): $(OBJS:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $(TARGET)
 
-args.o: src/args.c include/args.h
+args.o: src/args.c include/args.h ../common/include/error.h
 
 main.o: src/main.c ../common/include/error.h include/netrans.h include/args.h
 

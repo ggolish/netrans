@@ -11,6 +11,10 @@ int main(int argc, char *argv[])
 
     args = args_process(argc, argv);
 
+    if(!args) {
+        die(EXIT_FAILURE);
+    }
+
     if((sockfd = netrans_init(args->net_device, args->loopback)) == -1) {
         die(EXIT_FAILURE);
     }
