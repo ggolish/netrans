@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #define DEFAULT_NET_DEVICE "eth0"
 #define MAX_ETHER_PAYLOAD 1500
@@ -100,11 +101,14 @@ int netrans_send(int sockfd, int machine)
 
     for(int i = 0; i < len; ++i) {
         if(send_message(sockfd, machine, chunks[i], sizes[i]) == -1) return -1;
+        usleep(1);
         free(chunks[i]);
     }
 
     free(chunks);
     free(sizes);
+
+    printf("Packets sent: %d\n", len);
 
     return 1;
 }
