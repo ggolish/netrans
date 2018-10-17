@@ -14,10 +14,12 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define DEFAULT_NET_DEVICE "eth0"
 #define MAX_ETHER_PAYLOAD 1500
 #define MAC_ADDR_LEN 6
+#define CHUNK 2
 
 // A global ethernet packet header for sending messages
 static PACKET_ETH_HDR eth_hdr;
@@ -71,10 +73,40 @@ int netrans_init(char *net_device, int loopback)
     memcpy(&eth_hdr.eth_mac_src, &ifr_ma.ifr_hwaddr.sa_data, MAC_ADDR_LEN);
     eth_hdr.eth_type = ntohs(ETHER_TYPE_NETRANS);
 
-    // Attempt to send some message
-    if(send_message(sockfd, -1, "Hello!", 6) == -1) return -1;
-
     return sockfd;
+}
+
+int netrans_send(int sockfd, int machine)
+{
+    FILE *fd;
+    char **chunks = NULL, buffer[NETRANS_PAYLOAD_CHUNK];
+    int *sizes = NULL, len = 0, cap = 0, bytes;
+
+    if((fd = fopen("test.txt", "r")) == NULL) {
+        sprintf(err_msg, "Unable to open test.txt for reading");
+        return -1;
+    }
+
+    while((bytes = fread(buffer, sizeof(char), NETRANS_PAYLOAD_CHUNK, fd)) > 0) {
+        if(len >= cap - 1) {
+            cap = (cap == 0) ? CHUNK : cap * 2;
+            chunks = (char **)realloc(chunks, cap * sizeof(char *));
+            sizes = (int *)realloc(sizes, cap * sizeof(int));
+        }
+        chunks[len] = (char *)malloc(bytes * sizeof(char));
+        memcpy(chunks[len], buffer, bytes * sizeof(char));
+        sizes[len++] = bytes;
+    }
+
+    for(int i = 0; i < len; ++i) {
+        if(send_message(sockfd, machine, chunks[i], sizes[i]) == -1) return -1;
+        free(chunks[i]);
+    }
+
+    free(chunks);
+    free(sizes);
+
+    return 1;
 }
 
 static int send_message(int sockfd, int machine, const char *message, int message_size)

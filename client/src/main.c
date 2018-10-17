@@ -19,5 +19,9 @@ int main(int argc, char *argv[])
         die(EXIT_FAILURE);
     }
 
+    if(netrans_send(sockfd, args->target_machine) == -1) {
+        die(EXIT_FAILURE);
+    }
+
     return EXIT_SUCCESS;
 }
