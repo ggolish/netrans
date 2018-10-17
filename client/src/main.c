@@ -1,31 +1,17 @@
 #include "netrans.h"
 #include "error.h"
+#include "args.h"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 int main(int argc, char *argv[])
 {
-    int sockfd, opt;
-    int loopback = 0;
-    char *net_device = NULL;
+    int sockfd;
+    netrans_args_t *args;
 
-    while((opt = getopt(argc, argv, "ld:")) != -1) {
-        switch(opt) {
-            case 'd':
-                net_device = strdup(optarg);
-                break;
-            case 'l':
-                loopback = 1;
-                break;
-            default:
-                break;
-        }
-    }
+    args = args_process(argc, argv);
 
-    if((sockfd = netrans_init(net_device, loopback)) == -1) {
+    if((sockfd = netrans_init(args->net_device, args->loopback)) == -1) {
         die(EXIT_FAILURE);
     }
 
