@@ -23,7 +23,11 @@ int main(int argc, char *argv[])
         die(EXIT_FAILURE);
     }
 
-    if(netrans_send(sockfd, args->target_machine) == -1) {
+    if(args->send && netrans_send(sockfd, args->target_machine, args->local_path, args->remote_path) == -1) {
+        die(EXIT_FAILURE);
+    }
+
+    if(args->receive && netrans_receive(sockfd, args->target_machine, args->local_path, args->remote_path) == -1) {
         die(EXIT_FAILURE);
     }
 

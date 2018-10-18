@@ -79,11 +79,12 @@ int netrans_init(char *net_device, int loopback)
     return sockfd;
 }
 
-int netrans_send(int sockfd, int machine)
+int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
 {
     FILE *fd;
     char buffer[NETRANS_PAYLOAD_CHUNK];
     PACKET_NETRANS_CHUNK **chunks = NULL;
+    PACKET_NETRANS_SEND send;
     int len = 0, cap = 0, bytes, fsz;
 
     if((fd = fopen("test.txt", "r")) == NULL) {
@@ -97,6 +98,9 @@ int netrans_send(int sockfd, int machine)
     fseek(fd, 0, SEEK_SET);
     printf("Size of file: %d\n", fsz);
 
+    memset(&send, 0, sizeof(PACKET_NETRANS_SEND));
+    send.send_file_sz = fsz;
+    
     while((bytes = fread(buffer, sizeof(char), NETRANS_PAYLOAD_CHUNK, fd)) > 0) {
         if(len >= cap - 1) {
             cap = (cap == 0) ? CHUNK : cap * 2;
@@ -116,6 +120,11 @@ int netrans_send(int sockfd, int machine)
     printf("Packets sent: %d\n", len);
 
     return 1;
+}
+
+int netrans_receive(int sockfd, int machine, char *local_path, char *remote_path)
+{
+    return 0;
 }
 
 static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk)

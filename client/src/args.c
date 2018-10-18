@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define MAX_ARG_DESCRIPTION 100
-#define NUM_ARGS 7
+#define NUM_ARGS 8
 
 static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-h", "Print out usage information"},
@@ -17,11 +17,13 @@ static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-r", "Receive file <path> from <target-machine> [required without -s]."},
     {"-s", "Send file <path> to <target-machine> [required without -r]."},
     {"target-machine", "The machine to transfer to, can be n1, n2, or n3 [required without -l]."},
-    {"path", "If sending, the path to file on local machine. If receiving, the path to file on remote machine."}
+    {"local-path", "The path to file on local machine."},
+    {"remote-path", "The path to file on remote machine."}
 };
 
 static netrans_args_t *args_init();
 static void usage(char *name);
+static void help();
 static int parse_target_machine(netrans_args_t *args, char *arg);
 
 netrans_args_t *args_process(int argc, char *argv[])
@@ -45,6 +47,7 @@ netrans_args_t *args_process(int argc, char *argv[])
                 break;
             case 'h':
                 usage(argv[0]);
+                help();
                 exit(EXIT_SUCCESS);
             default:
                 break;
@@ -52,30 +55,28 @@ netrans_args_t *args_process(int argc, char *argv[])
     }
 
     if(!args->receive && !args->send) {
+        usage(argv[0]);
         sprintf(err_msg, "Must specify either '-s' or '-r'");
         return NULL;
     }
 
     if(args->receive && args->send) {
+        usage(argv[0]);
         sprintf(err_msg, "Cannot specify both '-r' and '-s'");
         return NULL;
     }
 
     diff = argc - optind;
 
-    if(diff != 2) {
-        if(diff == 1 && !args->loopback) {
-            sprintf(err_msg, "Must specify either '-l' or target-machine");
-            return NULL;
-        } else if(diff == 1) {
-            args->path = strdup(argv[optind]);
+    if(diff != 3) {
+        if(diff == 2 && args->loopback) {
+            args->local_path = strdup(argv[optind]);
+            args->remote_path = strdup(argv[optind + 1]);
         } else {
-            sprintf(err_msg, "Must specify a file path!");
+            usage(argv[0]);
+            noerror();
             return NULL;
         }
-    } else if(args->loopback) {
-        sprintf(err_msg, "Cannot specify both loopback and target-machine");
-        return NULL;
     } else {
 
         if(parse_target_machine(args, argv[optind]) == -1) {
@@ -83,7 +84,8 @@ netrans_args_t *args_process(int argc, char *argv[])
             return NULL;
         }
         
-        args->path = strdup(argv[optind + 1]);
+        args->local_path = strdup(argv[optind + 1]);
+        args->remote_path = strdup(argv[optind + 2]);
     }
 
     return args;
@@ -97,7 +99,8 @@ void args_print(netrans_args_t *args)
     if(args->receive) printf("Receiving\n");
     if(args->loopback) printf("Loopback\n");
     else printf("Target Machine: n%d\n", args->target_machine + 1);
-    printf("Path: %s\n", args->path);
+    printf("Local Path: %s\n", args->local_path);
+    printf("Remote Path: %s\n", args->remote_path);
     printf("-------------------\n\n");
 }
 
@@ -115,7 +118,11 @@ static netrans_args_t *args_init()
 
 static void usage(char *name)
 {
-    fprintf(stderr, "Usage: %s [-d <network device>] <-s | -r> <-l | target-machine> <path>\n", name);
+    fprintf(stderr, "Usage: %s [-d <network device>] <-s | -r> <-l | target-machine> <local-path> <remote-path>\n", name);
+}
+
+static void help()
+{
     for(int i = 0; i < NUM_ARGS; ++i) {
         fprintf(stderr, "  %-20s %s\n", arguments[i][0], arguments[i][1]);
     }

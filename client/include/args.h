@@ -3,7 +3,8 @@
 
 typedef struct {
     char *net_device;
-    char *path;
+    char *local_path;
+    char *remote_path;
     int send;
     int receive;
     int loopback;
