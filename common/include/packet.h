@@ -15,6 +15,7 @@ typedef struct __attribute__((packed)) {
 #define NETRANS_TYPE_SEND     0x01
 #define NETRANS_TYPE_RECEIVE  0x02
 #define NETRANS_TYPE_ACK      0x03
+#define NETRANS_TYPE_CHUNK    0x04
 
 typedef struct __attribute__((packed)) {
     uint8_t netrans_src;
@@ -22,6 +23,33 @@ typedef struct __attribute__((packed)) {
     uint8_t netrans_type;
 } PACKET_NETRANS_HDR;
 
+/*
+    Payload will be a path to store the file
+*/
+typedef struct __attribute__((packed)) {
+    uint32_t send_file_sz;
+    uint8_t send_path_sz; 
+} PACKET_NETRANS_SEND; 
+
+/*
+    Payload will be a path to target file
+*/
+typedef struct __attribute__((packed)) {
+    uint8_t receive_path_size;
+} PACKET_NETRANS_RECEIVE;
+
+#define NETRANS_ACK_YES  1
+#define NETRANS_ACK_NO  -1
+
+typedef struct __attribute__((packed)) {
+    uint8_t ack_ok;
+} PACKET_NETRANS_ACK;
+
 #define NETRANS_PAYLOAD_CHUNK 512
+
+typedef struct __attribute__((packed)) {
+    uint32_t chunk_id;
+    uint8_t chunk_payload[NETRANS_PAYLOAD_CHUNK];
+} PACKET_NETRANS_CHUNK;
 
 #endif
