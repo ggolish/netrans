@@ -33,7 +33,8 @@ static uint8_t mac_addrs[3][MAC_ADDR_LEN] = {
     {0x18, 0x03, 0x73, 0xd1, 0xd5, 0x28}  // n3
 };
 
-static int send_message(int sockfd, int machine, const char *message, int message_size);
+static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk);
+static PACKET_NETRANS_CHUNK *new_chunk(int id, char *payload, int sz);
 
 int netrans_init(char *net_device, int loopback)
 {
@@ -59,6 +60,7 @@ int netrans_init(char *net_device, int loopback)
 
     // Store network device index in destination addr struct
     dest_addr.sll_ifindex = ifr_nd.ifr_ifindex;
+    dest_addr.sll_halen = MAC_ADDR_LEN;
 
     // Determine the MAC address of the given network device
     memset(&ifr_ma, 0, sizeof(struct ifreq));
@@ -72,7 +74,7 @@ int netrans_init(char *net_device, int loopback)
     memset(&eth_hdr, 0, sizeof(PACKET_ETH_HDR));
     if(loopback) memcpy(&eth_hdr.eth_mac_dest, &ifr_ma.ifr_hwaddr.sa_data, MAC_ADDR_LEN);
     memcpy(&eth_hdr.eth_mac_src, &ifr_ma.ifr_hwaddr.sa_data, MAC_ADDR_LEN);
-    eth_hdr.eth_type = ntohs(ETHER_TYPE_NETRANS);
+    eth_hdr.eth_type = ntohs(ETH_TYPE_NETRANS);
 
     return sockfd;
 }
@@ -80,58 +82,61 @@ int netrans_init(char *net_device, int loopback)
 int netrans_send(int sockfd, int machine)
 {
     FILE *fd;
-    char **chunks = NULL, buffer[NETRANS_PAYLOAD_CHUNK];
-    int *sizes = NULL, len = 0, cap = 0, bytes;
+    char buffer[NETRANS_PAYLOAD_CHUNK];
+    PACKET_NETRANS_CHUNK **chunks = NULL;
+    int len = 0, cap = 0, bytes, fsz;
 
     if((fd = fopen("test.txt", "r")) == NULL) {
         sprintf(err_msg, "Unable to open test.txt for reading");
         return -1;
     }
 
+    // Determine the size of the file to send
+    fseek(fd, 0, SEEK_END);
+    fsz = ftell(fd);
+    fseek(fd, 0, SEEK_SET);
+    printf("Size of file: %d\n", fsz);
+
     while((bytes = fread(buffer, sizeof(char), NETRANS_PAYLOAD_CHUNK, fd)) > 0) {
         if(len >= cap - 1) {
             cap = (cap == 0) ? CHUNK : cap * 2;
-            chunks = (char **)realloc(chunks, cap * sizeof(char *));
-            sizes = (int *)realloc(sizes, cap * sizeof(int));
+            chunks = (PACKET_NETRANS_CHUNK **)realloc(chunks, cap * sizeof(PACKET_NETRANS_CHUNK *));
         }
-        chunks[len] = (char *)malloc(bytes * sizeof(char));
-        memcpy(chunks[len], buffer, bytes * sizeof(char));
-        sizes[len++] = bytes;
+        chunks[len] = new_chunk(len, buffer, bytes);
     }
 
     for(int i = 0; i < len; ++i) {
-        if(send_message(sockfd, machine, chunks[i], sizes[i]) == -1) return -1;
+        if(send_chunk(sockfd, machine, chunks[i]) == -1) return -1;
         usleep(1);
         free(chunks[i]);
     }
 
     free(chunks);
-    free(sizes);
 
     printf("Packets sent: %d\n", len);
 
     return 1;
 }
 
-static int send_message(int sockfd, int machine, const char *message, int message_size)
+static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk)
 {
     char payload[MAX_ETHER_PAYLOAD];
-    int eth_size, size = 0;
+    int eth_size, chunk_size, size = 0;
 
     // Set the destination MAC address in ethernet header
     if(machine >= 0) memcpy(&eth_hdr.eth_mac_dest, mac_addrs[machine], MAC_ADDR_LEN);
 
     // Set the destination MAC address in sockaddr struct
-    dest_addr.sll_halen = MAC_ADDR_LEN;
     memcpy(&dest_addr.sll_addr, &eth_hdr.eth_mac_dest, MAC_ADDR_LEN);
 
     eth_size = sizeof(PACKET_ETH_HDR);
+    chunk_size = sizeof(PACKET_NETRANS_CHUNK) - (NETRANS_PAYLOAD_CHUNK - chunk->chunk_size);
 
     // Build the payload
     memcpy(payload, &eth_hdr, eth_size);
     size += eth_size;
-    memcpy(payload + size, message, message_size);
-    size += message_size;
+    memcpy(payload + size, chunk, chunk_size);
+    size += chunk_size;
 
     int len = sendto(sockfd, payload, size, 0, (struct sockaddr *)(&dest_addr), sizeof(struct sockaddr_ll));
     if(len == -1) {
@@ -140,4 +145,16 @@ static int send_message(int sockfd, int machine, const char *message, int messag
     }
 
     return 0;
+}
+
+static PACKET_NETRANS_CHUNK *new_chunk(int id, char *payload, int sz)
+{
+    PACKET_NETRANS_CHUNK *tmp;
+
+    tmp = (PACKET_NETRANS_CHUNK *)malloc(sizeof(PACKET_NETRANS_CHUNK));
+    memset(tmp, 0, sizeof(PACKET_NETRANS_CHUNK));
+    tmp->chunk_id = id;
+    tmp->chunk_size = sz;
+    memcpy(tmp->chunk_payload, payload, sz * sizeof(uint8_t));
+    return tmp;
 }

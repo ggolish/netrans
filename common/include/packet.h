@@ -49,6 +49,7 @@ typedef struct __attribute__((packed)) {
 
 typedef struct __attribute__((packed)) {
     uint32_t chunk_id;
+    uint16_t chunk_size;
     uint8_t chunk_payload[NETRANS_PAYLOAD_CHUNK];
 } PACKET_NETRANS_CHUNK;
 
