@@ -1,6 +1,11 @@
 CFLAGS = -Wall -g -Iinclude -I../common/include
 CC = gcc
 
+ifeq ($(DEBUG), 1)
+    CFLAGS += -D NETRANS_DEBUG
+endif
+
+
 .SUFFIXES: .c .o
 
 .c.o:

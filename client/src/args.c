@@ -8,13 +8,16 @@
 #include <stdlib.h>
 
 #define MAX_ARG_DESCRIPTION 100
-#define NUM_ARGS 4
+#define NUM_ARGS 7
 
 static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-h", "Print out usage information"},
-    {"-l", "Enable loopback mode, transfer occurs on same machine [required without target-machine]"},
-    {"-d <network-device>", "The name of the network device to use, default is 'eth0'"},
-    {"target-machine", "The machine to transfer to, can be n1, n2, or n3 [required without -l]"}
+    {"-l", "Enable loopback mode, transfer occurs on same machine [required without target-machine]."},
+    {"-d <network-device>", "The name of the network device to use, default is 'eth0'."},
+    {"-r", "Receive file <path> from <target-machine> [required without -s]."},
+    {"-s", "Send file <path> to <target-machine> [required without -r]."},
+    {"target-machine", "The machine to transfer to, can be n1, n2, or n3 [required without -l]."},
+    {"path", "If sending, the path to file on local machine. If receiving, the path to file on remote machine."}
 };
 
 static netrans_args_t *args_init();
@@ -24,15 +27,21 @@ static int parse_target_machine(netrans_args_t *args, char *arg);
 netrans_args_t *args_process(int argc, char *argv[])
 {
     netrans_args_t *args = args_init();
-    int opt;
+    int opt, diff;
 
-    while((opt = getopt(argc, argv, "ld:h")) != -1) {
+    while((opt = getopt(argc, argv, "ld:hsr")) != -1) {
         switch(opt) {
             case 'd':
                 args->net_device = strdup(optarg);
                 break;
             case 'l':
                 args->loopback = 1;
+                break;
+            case 's':
+                args->send = 1;
+                break;
+            case 'r':
+                args->receive = 1;
                 break;
             case 'h':
                 usage(argv[0]);
@@ -42,20 +51,54 @@ netrans_args_t *args_process(int argc, char *argv[])
         }
     }
 
-    if((optind >= argc) && (!args->loopback)) {
-        sprintf(err_msg, "Must specify either '-l' or target-machine");
+    if(!args->receive && !args->send) {
+        sprintf(err_msg, "Must specify either '-s' or '-r'");
         return NULL;
-    } else if((optind < argc) && (args->loopback)) {
+    }
+
+    if(args->receive && args->send) {
+        sprintf(err_msg, "Cannot specify both '-r' and '-s'");
+        return NULL;
+    }
+
+    diff = argc - optind;
+
+    if(diff != 2) {
+        if(diff == 1 && !args->loopback) {
+            sprintf(err_msg, "Must specify either '-l' or target-machine");
+            return NULL;
+        } else if(diff == 1) {
+            args->path = strdup(argv[optind]);
+        } else {
+            sprintf(err_msg, "Must specify a file path!");
+            return NULL;
+        }
+    } else if(args->loopback) {
         sprintf(err_msg, "Cannot specify both loopback and target-machine");
         return NULL;
-    } else if(optind < argc) {
+    } else {
+
         if(parse_target_machine(args, argv[optind]) == -1) {
             sprintf(err_msg, "Invalid target machine '%s'", argv[optind]);
             return NULL;
         }
+        
+        args->path = strdup(argv[optind + 1]);
     }
 
     return args;
+}
+
+void args_print(netrans_args_t *args)
+{
+    printf("\n--ARGS-------------\n");
+    printf("Network Device: %s\n", args->net_device);
+    if(args->send) printf("Sending\n");
+    if(args->receive) printf("Receiving\n");
+    if(args->loopback) printf("Loopback\n");
+    else printf("Target Machine: n%d\n", args->target_machine + 1);
+    printf("Path: %s\n", args->path);
+    printf("-------------------\n\n");
 }
 
 static netrans_args_t *args_init()
@@ -63,7 +106,8 @@ static netrans_args_t *args_init()
     netrans_args_t *args;
 
     args = (netrans_args_t *)malloc(sizeof(netrans_args_t));
-    args->net_device = NULL;
+    args->net_device = "eth0";
+    args->send = args->receive = 0;
     args->loopback = 0;
     args->target_machine = -1;
     return args;
@@ -71,7 +115,7 @@ static netrans_args_t *args_init()
 
 static void usage(char *name)
 {
-    fprintf(stderr, "Usage: %s [-d <network device>] <-l | target-machine>\n", name);
+    fprintf(stderr, "Usage: %s [-d <network device>] <-s | -r> <-l | target-machine> <path>\n", name);
     for(int i = 0; i < NUM_ARGS; ++i) {
         fprintf(stderr, "  %-20s %s\n", arguments[i][0], arguments[i][1]);
     }
