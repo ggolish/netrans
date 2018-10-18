@@ -35,6 +35,7 @@ static uint8_t mac_addrs[3][MAC_ADDR_LEN] = {
 
 static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk);
 static PACKET_NETRANS_CHUNK *new_chunk(int id, char *payload, int sz);
+static int send_request(int sockfd, PACKET_NETRANS_SEND *send, char *path);
 
 int netrans_init(char *net_device, int loopback)
 {
@@ -87,7 +88,7 @@ int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
     PACKET_NETRANS_SEND send;
     int len = 0, cap = 0, bytes, fsz;
 
-    if((fd = fopen("test.txt", "r")) == NULL) {
+    if((fd = fopen(local_path, "r")) == NULL) {
         sprintf(err_msg, "Unable to open test.txt for reading");
         return -1;
     }
@@ -100,6 +101,7 @@ int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
 
     memset(&send, 0, sizeof(PACKET_NETRANS_SEND));
     send.send_file_sz = fsz;
+    send.send_path_sz = strlen(remote_path);
     
     while((bytes = fread(buffer, sizeof(char), NETRANS_PAYLOAD_CHUNK, fd)) > 0) {
         if(len >= cap - 1) {
@@ -154,6 +156,11 @@ static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk)
     }
 
     return 0;
+}
+
+static int send_request(int sockfd, PACKET_NETRANS_SEND *send, char *path)
+{
+    return 1;
 }
 
 static PACKET_NETRANS_CHUNK *new_chunk(int id, char *payload, int sz)
