@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define ETHER_TYPE_NETRANS 0x0929
+#define ETH_TYPE_NETRANS 0x0929
 
 // Ethernet packet header
 typedef struct __attribute__((packed)) {

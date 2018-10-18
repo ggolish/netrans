@@ -37,17 +37,36 @@ int netransd_mainloop(int sockfd)
     for(;;) {
         int len = recvfrom(sockfd, buffer, 4 * K, MSG_DONTWAIT, (struct sockaddr *)(&from), &addrlen);
         if(len > 0) {
-            int rv = process_packet(buffer);
+            process_packet(buffer);
         }
     }
 }
 
 static int process_packet(char *buffer)
 {
-    PACKET_ETH_HDR eth_hdr;
+    PACKET_ETH_HDR *eth_hdr;
+    PACKET_NETRANS_HDR *netrans_hdr;
+    uint16_t type;
 
-    memset(&eth_hdr, 0, sizeof(PACKET_ETH_HDR));
-    memcpy(&eth_hdr, buffer, sizeof(PACKET_ETH_HDR));
-    printf("%04x\n", ntohs(eth_hdr.eth_type));
-    return 0;
+    eth_hdr = (PACKET_ETH_HDR *)buffer;
+    type = ntohs(eth_hdr->eth_type);
+    if(type != ETH_TYPE_NETRANS) return 0;
+    netrans_hdr = (PACKET_NETRANS_HDR *)(buffer + sizeof(PACKET_ETH_HDR));
+    
+    switch(netrans_hdr->netrans_type) {
+        case NETRANS_TYPE_SEND:
+            printf("SEND from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);
+            break;
+        case NETRANS_TYPE_RECEIVE:
+            printf("RECEIVE from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);
+            break;
+        case NETRANS_TYPE_ACK:
+            printf("ACK from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);
+            break;
+        case NETRANS_TYPE_CHUNK:
+            printf("CHUNK from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);
+            break;
+    }
+
+    return 1;
 }
