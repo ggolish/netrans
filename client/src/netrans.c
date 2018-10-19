@@ -118,11 +118,12 @@ int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
             chunks = (PACKET_NETRANS_CHUNK **)realloc(chunks, cap * sizeof(PACKET_NETRANS_CHUNK *));
         }
         chunks[len] = new_chunk(len, buffer, bytes);
+        len++;
     }
 
     for(int i = 0; i < len; ++i) {
         if(send_chunk(sockfd, machine, chunks[i]) == -1) return -1;
-        usleep(1);
+        usleep(100);
         free(chunks[i]);
     }
 
@@ -166,7 +167,7 @@ static int send_message(int sockfd, int machine, char *message, int message_size
 
     memcpy(payload, &eth_hdr, eth_size);
     size += eth_size;
-    memcpy(payload, &netrans_hdr, netrans_size);
+    memcpy(payload + size, &netrans_hdr, netrans_size);
     size += netrans_size;
     memcpy(payload + size, message, message_size);
     size += message_size;
