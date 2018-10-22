@@ -8,8 +8,9 @@ CC = gcc
 
 OBJS = \
 	src/main.c	\
-	src/netransd.c	\
-	../common/src/error.c
+	src/server.c	\
+	../common/src/error.c \
+	../common/src/common.c
 
 TARGET = netransd
 
@@ -18,9 +19,11 @@ default: $(TARGET)
 $(TARGET): $(OBJS:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $(TARGET)
 
+common.o: ../common/src/common.c ../common/include/common.h
+
 main.o: src/main.c ../common/include/error.h
 
-netransd.o: src/netransd.c include/netransd.h ../common/include/error.h ../common/include/packet.h
+server.o: src/server.c include/server.h ../common/include/error.h ../common/include/packet.h
 
 error.o: ../common/src/error.c ../common/include/error.h
 

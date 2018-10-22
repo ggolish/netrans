@@ -1,5 +1,5 @@
-#include "netrans.h"
-#include "error.h"
+#include "common.h"
+#include "client.h"
 #include "args.h"
 
 #include <stdlib.h>

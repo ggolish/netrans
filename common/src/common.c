@@ -1,7 +1,4 @@
-#include "netrans.h"
-#include "error.h"
-#include "packet.h"
-#include "chunk.h"
+#include "common.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -34,11 +31,6 @@ static uint8_t mac_addrs[NETRANS_MACHINES][MAC_ADDR_LEN] = {
     {0x18, 0x03, 0x73, 0xd3, 0x63, 0x25}, // n2
     {0x18, 0x03, 0x73, 0xd1, 0xd5, 0x28}  // n3
 };
-
-static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk);
-static int send_request(int sockfd, PACKET_NETRANS_SEND *send, char *path);
-static int send_message(int sockfd, int machine, char *message, int message_size, uint8_t type);
-static int machine_lookup(uint8_t *mac_addr);
 
 int netrans_init(char *net_device, int loopback)
 {
@@ -88,55 +80,7 @@ int netrans_init(char *net_device, int loopback)
     return sockfd;
 }
 
-int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
-{
-    FILE *fd;
-    PACKET_NETRANS_CHUNK **chunks;
-    int len;
-
-    if((fd = fopen(local_path, "r")) == NULL) {
-        sprintf(err_msg, "Unable to open test.txt for reading");
-        return -1;
-    }
-
-    chunks = chunks_from_file(fd, &len);
-
-//     // Determine the size of the file to send
-//     fseek(fd, 0, SEEK_END);
-//     fsz = ftell(fd);
-//     fseek(fd, 0, SEEK_SET);
-//     printf("Size of file: %d\n", fsz);
-//
-//     memset(&send, 0, sizeof(PACKET_NETRANS_SEND));
-//     send.send_file_sz = fsz;
-//     send.send_path_sz = strlen(remote_path);
-
-
-    for(int i = 0; i < len; ++i) {
-        if(send_chunk(sockfd, machine, chunks[i]) == -1) return -1;
-        usleep(100);
-        free(chunks[i]);
-    }
-
-    free(chunks);
-
-    printf("Packets sent: %d\n", len);
-
-    return 1;
-}
-
-int netrans_receive(int sockfd, int machine, char *local_path, char *remote_path)
-{
-    return 0;
-}
-
-static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk)
-{
-    int chunk_size = sizeof(PACKET_NETRANS_CHUNK) - (NETRANS_PAYLOAD_CHUNK - chunk->chunk_size);
-    return send_message(sockfd, machine, (char *)chunk, chunk_size, NETRANS_TYPE_CHUNK);
-}
-
-static int send_message(int sockfd, int machine, char *message, int message_size, uint8_t type)
+int send_packet(int sockfd, int machine, char *packet, int packet_size, uint8_t type)
 {
     char payload[MAX_ETHER_PAYLOAD];
     int eth_size, netrans_size, size = 0;
@@ -160,8 +104,8 @@ static int send_message(int sockfd, int machine, char *message, int message_size
     size += eth_size;
     memcpy(payload + size, &netrans_hdr, netrans_size);
     size += netrans_size;
-    memcpy(payload + size, message, message_size);
-    size += message_size;
+    memcpy(payload + size, packet, packet_size);
+    size += packet_size;
 
     int len = sendto(sockfd, payload, size, 0, (struct sockaddr *)(&dest_addr), sizeof(struct sockaddr_ll));
     if(len == -1) {
@@ -172,12 +116,7 @@ static int send_message(int sockfd, int machine, char *message, int message_size
     return 0;
 }
 
-static int send_request(int sockfd, PACKET_NETRANS_SEND *send, char *path)
-{
-    return 1;
-}
-
-static int machine_lookup(uint8_t *mac_addr)
+int machine_lookup(uint8_t *mac_addr)
 {
     for(int i = 0; i < NETRANS_MACHINES; ++i) {
         if(memcmp(mac_addr, mac_addrs[i], MAC_ADDR_LEN) == 0) return i;

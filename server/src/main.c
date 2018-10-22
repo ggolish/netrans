@@ -1,5 +1,5 @@
-#include "netransd.h"
-#include "error.h"
+#include "common.h"
+#include "server.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
 {
     int sockfd;
 
-    if((sockfd = netransd_init()) == -1) {
+    if((sockfd = netrans_init(NULL, 0)) == -1) {
         die(EXIT_FAILURE);
     }
 
