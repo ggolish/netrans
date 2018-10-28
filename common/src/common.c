@@ -121,16 +121,14 @@ PACKET_NETRANS_HDR *receive_packet(int sockfd)
 {
     char *buffer = (char *)malloc(4 * K * sizeof(char));
 
-    for(;;) {
-        if(recvfrom(sockfd, buffer, 4 * K, 0, NULL, NULL) == -1) {
-            strcpy(err_msg, strerror(errno));
-            return NULL;
-        }
+    int len = recvfrom(sockfd, buffer, 4 * K, MSG_DONTWAIT, NULL, NULL);
+    if(len > 0) {
         PACKET_ETH_HDR *eth_hdr = (PACKET_ETH_HDR *)buffer;
         if(eth_hdr->eth_type == ETH_TYPE_NETRANS) {
             return (PACKET_NETRANS_HDR *)(buffer + sizeof(PACKET_ETH_HDR));
         }
     }
+    return NULL;
 }
 
 int machine_lookup(uint8_t *mac_addr)

@@ -42,7 +42,7 @@ typedef struct __attribute__((packed)) {
 } PACKET_NETRANS_RECEIVE;
 
 #define NETRANS_ACK_YES  1
-#define NETRANS_ACK_NO  -1
+#define NETRANS_ACK_NO   0
 
 typedef struct __attribute__((packed)) {
     uint8_t ack_ok;

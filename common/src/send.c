@@ -29,10 +29,12 @@ int send_request(int sockfd, int machine, uint32_t file_size, uint8_t path_len, 
     start = time(NULL);
     for(;;) {
         reply = receive_packet(sockfd);
-        if(reply->netrans_type == NETRANS_TYPE_ACK) {
-            if(reply->netrans_src == machine) {
-                ack = (PACKET_NETRANS_ACK *)(reply + sizeof(PACKET_NETRANS_HDR));
-                return ack->ack_ok;
+        if(reply != NULL) {
+            if(reply->netrans_type == NETRANS_TYPE_ACK) {
+                if(reply->netrans_src == machine) {
+                    ack = (PACKET_NETRANS_ACK *)(reply + sizeof(PACKET_NETRANS_HDR));
+                    return ack->ack_ok;
+                }
             }
         }
         current = time(NULL);
