@@ -11,33 +11,19 @@
 
 #define K 1024
 
-static int process_packet(char *buffer);
+static int process_packet(PACKET_NETRANS_HDR *netrans_hdr);
 
 int netransd_mainloop(int sockfd)
 {
-    char buffer[4 * K];
-    unsigned int addrlen;
-    struct sockaddr_ll from;
-
     for(;;) {
-        int len = recvfrom(sockfd, buffer, 4 * K, MSG_DONTWAIT, (struct sockaddr *)(&from), &addrlen);
-        if(len > 0) {
-            process_packet(buffer);
-        }
+        PACKET_NETRANS_HDR *packet = receive_packet(sockfd);
+        if(packet == NULL) return -1;
+        process_packet(packet);
     }
 }
 
-static int process_packet(char *buffer)
+static int process_packet(PACKET_NETRANS_HDR *netrans_hdr)
 {
-    PACKET_ETH_HDR *eth_hdr;
-    PACKET_NETRANS_HDR *netrans_hdr;
-    uint16_t type;
-
-    eth_hdr = (PACKET_ETH_HDR *)buffer;
-    type = ntohs(eth_hdr->eth_type);
-    if(type != ETH_TYPE_NETRANS) return 0;
-    netrans_hdr = (PACKET_NETRANS_HDR *)(buffer + sizeof(PACKET_ETH_HDR));
-
     switch(netrans_hdr->netrans_type) {
         case NETRANS_TYPE_SEND:
             printf("SEND from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);

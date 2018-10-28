@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define K 1024
 #define DEFAULT_NET_DEVICE "eth0"
 #define MAX_ETHER_PAYLOAD 1500
 #define MAC_ADDR_LEN 6
@@ -114,6 +115,22 @@ int send_packet(int sockfd, int machine, char *packet, int packet_size, uint8_t 
     }
 
     return 0;
+}
+
+PACKET_NETRANS_HDR *receive_packet(int sockfd)
+{
+    char *buffer = (char *)malloc(4 * K * sizeof(char));
+
+    for(;;) {
+        if(recvfrom(sockfd, buffer, 4 * K, 0, NULL, NULL) == -1) {
+            strcpy(err_msg, strerror(errno));
+            return NULL;
+        }
+        PACKET_ETH_HDR *eth_hdr = (PACKET_ETH_HDR *)buffer;
+        if(eth_hdr->eth_type == ETH_TYPE_NETRANS) {
+            return (PACKET_NETRANS_HDR *)(buffer + sizeof(PACKET_ETH_HDR));
+        }
+    }
 }
 
 int machine_lookup(uint8_t *mac_addr)
