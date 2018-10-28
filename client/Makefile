@@ -17,7 +17,8 @@ OBJS =                        \
 	../common/src/error.c \
 	src/args.c \
 	../common/src/chunk.c \
-	../common/src/common.c
+	../common/src/common.c \
+	../common/src/send.c
 
 TARGET = netrans
 
@@ -25,6 +26,8 @@ default: $(TARGET)
 
 $(TARGET): $(OBJS:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $(TARGET)
+
+send.o: ../send/src/send.c ../send/include/send.h
 
 common.o: ../common/src/common.c ../common/include/common.h
 
