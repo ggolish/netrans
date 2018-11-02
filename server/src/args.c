@@ -1,6 +1,6 @@
 
 #include "args.h"
-#include "error.h"
+#include "common.h"
 
 #include <unistd.h>
 #include <string.h>
@@ -9,7 +9,6 @@
 
 #define MAX_ARG_DESCRIPTION 100
 #define NUM_ARGS 2
-#define DEFAULT_NET_DEVICE "eth0"
 
 static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-h", "Print out usage information"},

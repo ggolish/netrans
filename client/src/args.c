@@ -1,6 +1,6 @@
 
+#include "common.h"
 #include "args.h"
-#include "error.h"
 
 #include <unistd.h>
 #include <string.h>
@@ -83,7 +83,7 @@ netrans_args_t *args_process(int argc, char *argv[])
             sprintf(err_msg, "Invalid target machine '%s'", argv[optind]);
             return NULL;
         }
-        
+
         args->local_path = strdup(argv[optind + 1]);
         args->remote_path = strdup(argv[optind + 2]);
     }
@@ -109,10 +109,10 @@ static netrans_args_t *args_init()
     netrans_args_t *args;
 
     args = (netrans_args_t *)malloc(sizeof(netrans_args_t));
-    args->net_device = "eth0";
+    args->net_device = DEFAULT_NET_DEVICE;
     args->send = args->receive = 0;
     args->loopback = 0;
-    args->target_machine = -1;
+    args->target_machine = NETRANS_LOOPBACK_ID;
     return args;
 }
 
@@ -134,5 +134,5 @@ static int parse_target_machine(netrans_args_t *args, char *arg)
         args->target_machine = atoi(&arg[1]) - 1;
         return 1;
     }
-    return -1;
+    return NETRANS_LOOPBACK_ID;
 }
