@@ -1,6 +1,7 @@
 
 #include "send.h"
 
+#include <arpa/inet.h>
 #include <string.h>
 #include <time.h>
 
@@ -17,7 +18,7 @@ int send_request(int sockfd, int machine, uint32_t file_size, uint8_t path_len, 
     time_t start, current;
 
     memset(&send, 0, sizeof(PACKET_NETRANS_SEND));
-    send.send_file_sz = file_size;
+    send.send_file_sz = htonl(file_size);
     send.send_path_sz = path_len;
     memcpy(&send.send_path, path, MIN(path_len, NETRANS_PAYLOAD_CHUNK));
     size = sizeof(PACKET_NETRANS_SEND) - (NETRANS_PAYLOAD_CHUNK - path_len);

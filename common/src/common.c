@@ -117,17 +117,21 @@ int send_packet(int sockfd, int machine, char *packet, int packet_size, uint8_t 
     return 0;
 }
 
-PACKET_NETRANS_HDR *receive_packet(int sockfd)
+char *receive_packet(int sockfd)
 {
-    char *buffer = (char *)malloc(4 * K * sizeof(char));
+    char buffer[4 * K];
+    char *packet;
 
     int len = recvfrom(sockfd, buffer, 4 * K, MSG_DONTWAIT, NULL, NULL);
     if(len > 0) {
         PACKET_ETH_HDR *eth_hdr = (PACKET_ETH_HDR *)buffer;
-        if(eth_hdr->eth_type == ETH_TYPE_NETRANS) {
-            return (PACKET_NETRANS_HDR *)(buffer + sizeof(PACKET_ETH_HDR));
+        if(ntohs(eth_hdr->eth_type) == ETH_TYPE_NETRANS) {
+            packet = (char *)malloc(len * sizeof(char));
+            memcpy(packet, buffer, len * sizeof(char));
+            return packet;
         }
     }
+
     return NULL;
 }
 
