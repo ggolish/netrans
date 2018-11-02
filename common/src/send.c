@@ -12,9 +12,10 @@
 int send_request(int sockfd, int machine, uint32_t file_size, uint8_t path_len, uint8_t *path)
 {
     PACKET_NETRANS_SEND send;
+    char *packet;
     PACKET_NETRANS_HDR *reply;
     PACKET_NETRANS_ACK *ack;
-    int size;
+    int size, offset;
     time_t start, current;
 
     memset(&send, 0, sizeof(PACKET_NETRANS_SEND));
@@ -29,11 +30,14 @@ int send_request(int sockfd, int machine, uint32_t file_size, uint8_t path_len, 
 
     start = time(NULL);
     for(;;) {
-        reply = receive_packet(sockfd);
-        if(reply != NULL) {
+        packet = receive_packet(sockfd);
+        if(packet != NULL) {
+            offset = sizeof(PACKET_ETH_HDR);
+            reply = (PACKET_NETRANS_HDR *)(packet + offset);
+            offset += sizeof(PACKET_NETRANS_HDR);
             if(reply->netrans_type == NETRANS_TYPE_ACK) {
                 if(reply->netrans_src == machine) {
-                    ack = (PACKET_NETRANS_ACK *)(reply + sizeof(PACKET_NETRANS_HDR));
+                    ack = (PACKET_NETRANS_ACK *)(packet + offset);
                     return ack->ack_ok;
                 }
             }

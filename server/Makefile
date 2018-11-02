@@ -10,7 +10,8 @@ OBJS = \
 	src/main.c	\
 	src/server.c	\
 	../common/src/error.c \
-	../common/src/common.c
+	../common/src/common.c \
+	../common/src/ack.c
 
 TARGET = netransd
 
@@ -18,6 +19,8 @@ default: $(TARGET)
 
 $(TARGET): $(OBJS:.c=.o)
 	$(CC) $(CFLAGS) $^ -o $(TARGET)
+
+ack.o: ../common/src/ack.c ../common/include/ack.h
 
 common.o: ../common/src/common.c ../common/include/common.h
 

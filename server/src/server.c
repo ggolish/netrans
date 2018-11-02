@@ -17,7 +17,7 @@
 
 static void reap(int sig);
 static int process_packet(int sockfd, char *packet);
-static int process_send(int sockfd, PACKET_NETRANS_SEND *send);
+static int process_send(int sockfd, int remote_machine, PACKET_NETRANS_SEND *send);
 
 int netransd_mainloop(int sockfd)
 {
@@ -68,7 +68,7 @@ static int process_packet(int sockfd, char *packet)
     switch(netrans_hdr->netrans_type) {
         case NETRANS_TYPE_SEND:
             printf("SEND from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);
-            process_send(sockfd, (PACKET_NETRANS_SEND *)(packet + offset));
+            process_send(sockfd, netrans_hdr->netrans_src, (PACKET_NETRANS_SEND *)(packet + offset));
             break;
         case NETRANS_TYPE_RECEIVE:
             printf("RECEIVE from n%d to n%d\n", netrans_hdr->netrans_src + 1, netrans_hdr->netrans_dest + 1);
@@ -84,12 +84,12 @@ static int process_packet(int sockfd, char *packet)
     return 1;
 }
 
-static int process_send(int sockfd, PACKET_NETRANS_SEND *send)
+static int process_send(int sockfd, int remote_machine, PACKET_NETRANS_SEND *send)
 {
     printf("File size: %d\n", ntohl(send->send_file_sz));
     printf("Path size: %d\n", send->send_path_sz);
     printf("Path: ");
     fwrite(send->send_path, sizeof(char), send->send_path_sz, stdout);
     printf("\n\n");
-    return 1;
+    return acknowledge(sockfd, remote_machine, NETRANS_ACK_YES);
 }
