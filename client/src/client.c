@@ -27,7 +27,8 @@ int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
         case NETRANS_ACK_YES:
             break;
         case NETRANS_ACK_NO:
-            break;
+            sprintf(err_msg, "Send request denied");
+            return -1;
         case -1:
             return -1;
     }
