@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -51,7 +52,7 @@ void chunks_destroy(PACKET_NETRANS_CHUNK **chunks, int nchunks)
 
 static int send_chunk(int sockfd, int machine, PACKET_NETRANS_CHUNK *chunk)
 {
-    int chunk_size = sizeof(PACKET_NETRANS_CHUNK) - (NETRANS_PAYLOAD_CHUNK - chunk->chunk_size);
+    int chunk_size = sizeof(PACKET_NETRANS_CHUNK) - (NETRANS_PAYLOAD_CHUNK - ntohs(chunk->chunk_size));
     return send_packet(sockfd, machine, (char *)chunk, chunk_size, NETRANS_TYPE_CHUNK);
 }
 
@@ -61,8 +62,8 @@ static PACKET_NETRANS_CHUNK *new_chunk(int id, char *payload, int sz)
 
     tmp = (PACKET_NETRANS_CHUNK *)malloc(sizeof(PACKET_NETRANS_CHUNK));
     memset(tmp, 0, sizeof(PACKET_NETRANS_CHUNK));
-    tmp->chunk_id = id;
-    tmp->chunk_size = sz;
+    tmp->chunk_id = htonl((uint32_t)id);
+    tmp->chunk_size = htons((uint16_t)sz);
     memcpy(tmp->chunk_payload, payload, sz * sizeof(uint8_t));
     return tmp;
 }
