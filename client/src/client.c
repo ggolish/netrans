@@ -8,8 +8,7 @@
 int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
 {
     FILE *fd;
-    PACKET_NETRANS_CHUNK **chunks;
-    int len, file_size, reply;
+    int file_size, reply;
 
     if((fd = fopen(local_path, "r")) == NULL) {
         sprintf(err_msg, "Unable to open test.txt for reading");
@@ -33,13 +32,7 @@ int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
             return -1;
     }
 
-    chunks = chunks_from_file(fd, &len);
-    if(chunks_send(sockfd, machine, chunks, len) == -1) return -1;
-    chunks_destroy(chunks, len);
-
-    printf("Packets sent: %d\n", len);
-
-    return 1;
+    return chunks_send(sockfd, machine, fd);
 }
 
 int netrans_receive(int sockfd, int machine, char *local_path, char *remote_path)
