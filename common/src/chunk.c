@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#define BREAK 100
+#define BREAK 50
 #define CHUNK 2
 
 static PACKET_NETRANS_CHUNK *new_chunk(int id, char *payload, int sz);
