@@ -23,7 +23,7 @@ typedef struct __attribute__((packed)) {
     uint8_t netrans_type;
 } PACKET_NETRANS_HDR;
 
-#define NETRANS_PAYLOAD_CHUNK 512
+#define NETRANS_PAYLOAD_CHUNK 1024
 
 /*
     Payload will be a path to store the file
