@@ -29,7 +29,7 @@ typedef struct __attribute__((packed)) {
     Payload will be a path to store the file
 */
 typedef struct __attribute__((packed)) {
-    uint32_t send_file_sz;
+    uint64_t send_file_sz;
     uint8_t send_path_sz;
     uint8_t send_path[NETRANS_PAYLOAD_CHUNK];
 } PACKET_NETRANS_SEND;
@@ -49,7 +49,7 @@ typedef struct __attribute__((packed)) {
 } PACKET_NETRANS_ACK;
 
 typedef struct __attribute__((packed)) {
-    uint32_t chunk_id;
+    uint64_t chunk_id;
     uint16_t chunk_size;
     uint8_t chunk_payload[NETRANS_PAYLOAD_CHUNK];
 } PACKET_NETRANS_CHUNK;

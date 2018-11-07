@@ -8,7 +8,8 @@
 int netrans_send(int sockfd, int machine, char *local_path, char *remote_path)
 {
     FILE *fd;
-    int file_size, reply;
+    uint64_t file_size;
+    int reply;
 
     if((fd = fopen(local_path, "r")) == NULL) {
         sprintf(err_msg, "Unable to open test.txt for reading");

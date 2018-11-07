@@ -2,6 +2,7 @@
 #include "queue.h"
 #include "common.h"
 
+#include <endian.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <time.h>
@@ -32,10 +33,10 @@ typedef struct {
     // Variables for writing files sent to server
     char *send_path;
     int fd;
-    int total_size;
-    int total_chunks;
-    int current_size;
-    int current_chunks;
+    uint64_t total_size;
+    uint64_t total_chunks;
+    uint64_t current_size;
+    uint64_t current_chunks;
 
     // The current remote machine to send to / receive from
     int remote_machine;
@@ -114,24 +115,17 @@ static int process_packet(int sockfd, char *packet)
 
 static int process_send(int sockfd, int remote_machine, PACKET_NETRANS_SEND *send)
 {
-    int file_size;
+    uint64_t file_size;
 
     server.send_path = (char *)malloc(send->send_path_sz * sizeof(char) + 1);
     memcpy(server.send_path, send->send_path, send->send_path_sz);
     server.send_path[send->send_path_sz] = '\0';
-    file_size = ntohl(send->send_file_sz);
+    file_size = be64toh(send->send_file_sz);
 
     if((server.fd = open(server.send_path, O_CREAT | O_WRONLY, 0644)) == -1) {
         fprintf(stderr, "cannot open %s\n", server.send_path);
         free(server.send_path);
         return acknowledge(sockfd, remote_machine, NETRANS_ACK_NO);
-    }
-
-    for(int i = 0; i < file_size; ++i) {
-        if(write(server.fd, "\0", 1) == -1) {
-            fprintf(stderr, "cannot write to %s\n", server.send_path);
-            return acknowledge(sockfd, remote_machine, NETRANS_ACK_NO);
-        }
     }
 
     server.total_size = file_size;
@@ -147,10 +141,11 @@ static int process_send(int sockfd, int remote_machine, PACKET_NETRANS_SEND *sen
 
 static int process_chunk(PACKET_NETRANS_CHUNK *chunk)
 {
-    int size, offset;
+    int size;
+    uint64_t offset;
 
     size = ntohs(chunk->chunk_size);
-    offset = ntohl(chunk->chunk_id) * NETRANS_PAYLOAD_CHUNK;
+    offset = be64toh(chunk->chunk_id) * NETRANS_PAYLOAD_CHUNK;
     server.last_time = time(NULL);
 
     lseek(server.fd, offset, SEEK_SET);
@@ -164,7 +159,6 @@ static int process_chunk(PACKET_NETRANS_CHUNK *chunk)
         close(server.fd);
         server.state = SERVER_NORMAL;
     } else if((server.current_size >= server.total_size) || (server.current_chunks >= server.total_chunks)) {
-        fprintf(stderr, "NOPE!\n");
         close(server.fd);
         unlink(server.send_path);
         free(server.send_path);

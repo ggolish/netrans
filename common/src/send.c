@@ -1,6 +1,7 @@
 
 #include "send.h"
 
+#include <endian.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <time.h>
@@ -9,7 +10,7 @@
 
 #define SEND_REQUEST_TIMEOUT 30
 
-int send_request(int sockfd, int machine, uint32_t file_size, uint8_t path_len, uint8_t *path)
+int send_request(int sockfd, int machine, uint64_t file_size, uint8_t path_len, uint8_t *path)
 {
     PACKET_NETRANS_SEND send;
     char *packet;
@@ -19,7 +20,7 @@ int send_request(int sockfd, int machine, uint32_t file_size, uint8_t path_len, 
     time_t start, current;
 
     memset(&send, 0, sizeof(PACKET_NETRANS_SEND));
-    send.send_file_sz = htonl(file_size);
+    send.send_file_sz = htobe64(file_size);
     send.send_path_sz = path_len;
     memcpy(&send.send_path, path, MIN(path_len, NETRANS_PAYLOAD_CHUNK));
     size = sizeof(PACKET_NETRANS_SEND) - (NETRANS_PAYLOAD_CHUNK - path_len);
