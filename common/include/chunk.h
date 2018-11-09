@@ -5,6 +5,6 @@
 
 #include <stdio.h>
 
-extern int chunks_send(int sockfd, int machine, FILE *fd);
+extern int chunks_send(int sockfd, int machine, FILE *fd, uint64_t file_size, int verbose);
 
 #endif

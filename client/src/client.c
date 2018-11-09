@@ -41,8 +41,8 @@ int netrans_send(int sockfd, int machine, char *local_path, char *remote_path, i
     }
 
     if(verbose) printf("Sending chunks to server...\n");
-    
-    return chunks_send(sockfd, machine, fd);
+
+    return chunks_send(sockfd, machine, fd, file_size, verbose);
 }
 
 int netrans_receive(int sockfd, int machine, char *local_path, char *remote_path)
