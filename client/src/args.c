@@ -16,7 +16,7 @@ static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-d <network-device>", "The name of the network device to use, default is 'eth0'."},
     {"-r", "Receive file <path> from <target-machine> [required without -s]."},
     {"-s", "Send file <path> to <target-machine> [required without -r]."},
-    {"-v", "Enable verbosity."}
+    {"-v", "Enable verbosity."},
     {"target-machine", "The machine to transfer to, can be n1, n2, or n3 [required without -l]."},
     {"local-path", "The path to file on local machine."},
     {"remote-path", "The path to file on remote machine."}
