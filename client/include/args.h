@@ -5,6 +5,7 @@ typedef struct {
     char *net_device;
     char *local_path;
     char *remote_path;
+    int verbose;
     int send;
     int receive;
     int loopback;

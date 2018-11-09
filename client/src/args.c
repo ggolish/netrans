@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 #define MAX_ARG_DESCRIPTION 100
-#define NUM_ARGS 8
+#define NUM_ARGS 9
 
 static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-h", "Print out usage information"},
@@ -16,6 +16,7 @@ static char arguments[NUM_ARGS][2][MAX_ARG_DESCRIPTION] = {
     {"-d <network-device>", "The name of the network device to use, default is 'eth0'."},
     {"-r", "Receive file <path> from <target-machine> [required without -s]."},
     {"-s", "Send file <path> to <target-machine> [required without -r]."},
+    {"-v", "Enable verbosity."}
     {"target-machine", "The machine to transfer to, can be n1, n2, or n3 [required without -l]."},
     {"local-path", "The path to file on local machine."},
     {"remote-path", "The path to file on remote machine."}
@@ -31,7 +32,7 @@ netrans_args_t *args_process(int argc, char *argv[])
     netrans_args_t *args = args_init();
     int opt, diff;
 
-    while((opt = getopt(argc, argv, "ld:hsr")) != -1) {
+    while((opt = getopt(argc, argv, "ld:hsrv")) != -1) {
         switch(opt) {
             case 'd':
                 args->net_device = strdup(optarg);
@@ -44,6 +45,9 @@ netrans_args_t *args_process(int argc, char *argv[])
                 break;
             case 'r':
                 args->receive = 1;
+                break;
+            case 'v':
+                args->verbose = 1;
                 break;
             case 'h':
                 usage(argv[0]);
@@ -111,6 +115,7 @@ static netrans_args_t *args_init()
     args = (netrans_args_t *)malloc(sizeof(netrans_args_t));
     args->net_device = DEFAULT_NET_DEVICE;
     args->send = args->receive = 0;
+    args->verbose = 0;
     args->loopback = 0;
     args->target_machine = NETRANS_LOOPBACK_ID;
     return args;
@@ -118,7 +123,7 @@ static netrans_args_t *args_init()
 
 static void usage(char *name)
 {
-    fprintf(stderr, "Usage: %s [-d <network device>] <-s | -r> <-l | target-machine> <local-path> <remote-path>\n", name);
+    fprintf(stderr, "Usage: %s [-d <network device>] [-v] <-s | -r> <-l | target-machine> <local-path> <remote-path>\n", name);
 }
 
 static void help()
